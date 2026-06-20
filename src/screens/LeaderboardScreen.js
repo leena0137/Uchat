@@ -2,38 +2,37 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, Platform, Image, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { db, auth } from '../config/firebase';
-import { collection, query, orderBy, limit, getDocs, addDoc } from 'firebase/firestore';
+import { collection, query, orderBy, limit, onSnapshot, addDoc } from 'firebase/firestore';
 
 export default function LeaderboardScreen({ navigation }) {
   const [topUsers, setTopUsers] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading]   = useState(true);
+  const [isLive, setIsLive]     = useState(false);
 
   useEffect(() => {
-    fetchLeaderboard();
-  }, []);
+    const q = query(collection(db, 'users'), orderBy('diamonds', 'desc'), limit(50));
 
-  const fetchLeaderboard = async () => {
-    try {
-      // Query top 50 users by diamonds
-      const q = query(collection(db, 'users'), orderBy('diamonds', 'desc'), limit(50));
-      const querySnapshot = await getDocs(q);
+    const unsub = onSnapshot(q, (snapshot) => {
       const users = [];
-      querySnapshot.forEach((doc) => {
+      snapshot.forEach((doc) => {
         users.push({ id: doc.id, ...doc.data() });
       });
 
       if (users.length <= 1) {
-        await seedDummyUsers();
+        seedDummyUsers();
         return;
       }
 
       setTopUsers(users);
       setLoading(false);
-    } catch (error) {
-      console.error("Error fetching leaderboard:", error);
+      setIsLive(true);
+    }, (error) => {
+      console.error('Leaderboard error:', error);
       setLoading(false);
-    }
-  };
+    });
+
+    return () => unsub(); // Cleanup on unmount
+  }, []);
 
   const seedDummyUsers = async () => {
     try {
@@ -149,7 +148,15 @@ export default function LeaderboardScreen({ navigation }) {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color="#fff" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Leaderboard</Text>
+        <View style={{ alignItems: 'center' }}>
+          <Text style={styles.headerTitle}>Leaderboard</Text>
+          {isLive && (
+            <View style={styles.liveBadge}>
+              <View style={styles.liveDot} />
+              <Text style={styles.liveText}>LIVE</Text>
+            </View>
+          )}
+        </View>
         <View style={{width: 24}} />
       </View>
 
@@ -266,5 +273,29 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  liveBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 59, 139, 0.2)',
+    borderWidth: 1,
+    borderColor: '#FF3B8B',
+    borderRadius: 20,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    gap: 4,
+    marginTop: 2,
+  },
+  liveDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#FF3B8B',
+  },
+  liveText: {
+    color: '#FF3B8B',
+    fontSize: 10,
+    fontWeight: '900',
+    letterSpacing: 1,
   },
 });

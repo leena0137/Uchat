@@ -5,6 +5,11 @@ import { doc, onSnapshot, collection, addDoc, serverTimestamp, updateDoc, query,
 import Animated, { FadeInDown, FadeIn, BounceIn } from 'react-native-reanimated';
 import { db, auth } from '../config/firebase';
 import GiftModal from '../components/GiftModal';
+import GamesHubModal from '../components/GamesHubModal';
+import DiceGame from '../components/games/DiceGame';
+import CardGame from '../components/games/CardGame';
+import CarGame from '../components/games/CarGame';
+import LudoGame from '../components/games/LudoGame';
 import LottieView from 'lottie-react-native';
 
 const ChatMessage = memo(({ msg, isMe }) => (
@@ -58,6 +63,8 @@ export default function VoiceRoomScreen({ route, navigation }) {
   const [messages, setMessages] = useState([]);
   const [seats, setSeats] = useState(Array.from({ length: 8 }).map((_, i) => ({ id: i.toString(), isEmpty: true, name: '' })));
   const [showGifts, setShowGifts] = useState(false);
+  const [showGamesHub, setShowGamesHub] = useState(false);
+  const [gameState, setGameState] = useState(null);
   const [userCoins, setUserCoins] = useState(5000);
   const [activeAnimation, setActiveAnimation] = useState(null);
 
@@ -94,9 +101,8 @@ export default function VoiceRoomScreen({ route, navigation }) {
     const unsubRoom = onSnapshot(roomRef, (docSnap) => {
       if (docSnap.exists()) {
         const data = docSnap.data();
-        if (data.seats) {
-          setSeats(data.seats);
-        }
+        if (data.seats) setSeats(data.seats);
+        if (data.gameState) setGameState(data.gameState);
         setIsJoined(true);
       } else {
         Alert.alert("Room Closed", "This room has ended.");
@@ -280,6 +286,44 @@ export default function VoiceRoomScreen({ route, navigation }) {
         userCoins={userCoins} 
       />
 
+      <GamesHubModal 
+        visible={showGamesHub} 
+        onClose={() => setShowGamesHub(false)} 
+        roomId={roomId}
+        isHost={user?.displayName === host || host === 'Host'} 
+      />
+
+      {gameState?.activeGame === 'dice' && (
+        <DiceGame 
+          gameState={gameState} 
+          roomId={roomId} 
+          onClose={() => setGameState(null)} 
+        />
+      )}
+      {gameState?.activeGame === 'cards' && (
+        <CardGame 
+          gameState={gameState} 
+          roomId={roomId} 
+          onClose={() => setGameState(null)} 
+        />
+      )}
+      {gameState?.activeGame === 'car' && (
+        <CarGame 
+          gameState={gameState} 
+          roomId={roomId} 
+          onClose={() => setGameState(null)} 
+          isHost={user?.displayName === host || host === 'Host'} 
+        />
+      )}
+      {gameState?.activeGame === 'ludo' && (
+        <LudoGame 
+          gameState={gameState} 
+          roomId={roomId} 
+          onClose={() => setGameState(null)} 
+          isHost={user?.displayName === host || host === 'Host'} 
+        />
+      )}
+
       {activeAnimation && (
         <View style={[StyleSheet.absoluteFill, { zIndex: 9999, justifyContent: 'center', alignItems: 'center' }]} pointerEvents="none">
           <LottieView
@@ -314,6 +358,13 @@ export default function VoiceRoomScreen({ route, navigation }) {
               <Ionicons name={isMuted ? "mic-off" : "mic"} size={22} color="#fff" />
             </TouchableOpacity>
             
+            <TouchableOpacity 
+              style={[styles.circleBtn, { backgroundColor: '#4CAF50', shadowColor: '#4CAF50', shadowOpacity: 0.5, shadowRadius: 8, shadowOffset: { width: 0, height: 4 } }]}
+              onPress={() => setShowGamesHub(true)}
+            >
+              <Ionicons name="game-controller" size={22} color="#fff" />
+            </TouchableOpacity>
+
             <TouchableOpacity 
               style={[styles.circleBtn, { backgroundColor: '#FF3B8B', shadowColor: '#FF3B8B', shadowOpacity: 0.5, shadowRadius: 8, shadowOffset: { width: 0, height: 4 } }]}
               onPress={() => setShowGifts(true)}

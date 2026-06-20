@@ -1,11 +1,16 @@
 import React, { useState, useEffect, useRef, memo, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, KeyboardAvoidingView, Platform, ImageBackground, TextInput, Alert, FlatList } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { doc, onSnapshot, collection, addDoc, serverTimestamp, updateDoc, query, orderBy, limit, setDoc } from 'firebase/firestore';
+import { doc, onSnapshot, collection, addDoc, serverTimestamp, updateDoc, query, orderBy, limit, setDoc, getDoc, increment } from 'firebase/firestore';
 import Animated, { FadeInDown, FadeIn, BounceIn } from 'react-native-reanimated';
 import { db, auth } from '../config/firebase';
 import { AGORA_APP_ID } from '../config/agora';
 import GiftModal from '../components/GiftModal';
+import GamesHubModal from '../components/GamesHubModal';
+import DiceGame from '../components/games/DiceGame';
+import CardGame from '../components/games/CardGame';
+import CarGame from '../components/games/CarGame';
+import LudoGame from '../components/games/LudoGame';
 
 let LottieView = () => null;
 
@@ -72,6 +77,8 @@ export default function VoiceRoomScreen({ route, navigation }) {
   const [messages, setMessages] = useState([]);
   const [seats, setSeats] = useState(Array.from({ length: 8 }).map((_, i) => ({ id: i.toString(), isEmpty: true, name: '' })));
   const [showGifts, setShowGifts] = useState(false);
+  const [showGamesHub, setShowGamesHub] = useState(false);
+  const [gameState, setGameState] = useState(null);
   const [activeAnimation, setActiveAnimation] = useState(null);
   const [userCoins, setUserCoins] = useState(5000);
 
@@ -137,9 +144,8 @@ export default function VoiceRoomScreen({ route, navigation }) {
     const unsubRoom = onSnapshot(roomRef, (docSnap) => {
       if (docSnap.exists()) {
         const data = docSnap.data();
-        if (data.seats) {
-          setSeats(data.seats);
-        }
+        if (data.seats) setSeats(data.seats);
+        if (data.gameState) setGameState(data.gameState);
         setIsJoined(true);
       } else {
         Alert.alert("Room Closed", "This room has ended.");
@@ -208,18 +214,55 @@ export default function VoiceRoomScreen({ route, navigation }) {
   const handleSendGift = useCallback(async (gift) => {
     if (!roomId || userCoins < gift.cost) return;
     try {
-      const newCoins = userCoins - gift.cost;
-      const userRef = doc(db, 'users', user.uid);
-      await setDoc(userRef, { coins: newCoins }, { merge: true });
-      
-      await addDoc(collection(db, 'rooms', roomId, 'messages'), {
-        user: user?.displayName || 'User',
-        userId: user?.uid,
-        text: `Sent a ${gift.name} ${gift.icon}`,
-        isGift: true,
-        animationUrl: gift.animation,
+      // 1. Deduct coins from sender
+      const senderRef = doc(db, 'users', user.uid);
+      await setDoc(senderRef, { coins: userCoins - gift.cost }, { merge: true });
+
+      // 2. Find the host of this room and add beans to them
+      const roomSnap = await getDoc(doc(db, 'rooms', roomId));
+      if (roomSnap.exists()) {
+        const roomData = roomSnap.data();
+        const hostId = roomData.hostId;
+        if (hostId && hostId !== 'guest' && hostId !== user.uid) {
+          const hostRef = doc(db, 'users', hostId);
+          await setDoc(hostRef, {
+            beans: increment(gift.cost),
+            totalGiftsReceived: increment(1),
+          }, { merge: true });
+        }
+      }
+
+      // 3. Log global gift transaction
+      await addDoc(collection(db, 'giftTransactions'), {
+        senderId:    user.uid,
+        senderName:  user?.displayName || 'User',
+        roomId,
+        giftId:      gift.id,
+        giftName:    gift.name,
+        giftIcon:    gift.icon,
+        coins:       gift.cost,
+        beans:       gift.cost, // 1:1 conversion
+        createdAt:   serverTimestamp(),
+      });
+
+      // 4. Log to sender's coinTransactions
+      await addDoc(collection(db, 'users', user.uid, 'coinTransactions'), {
+        type:      'gift_sent',
+        giftName:  gift.name,
+        coins:     gift.cost,
+        roomId,
         createdAt: serverTimestamp(),
-        isSystem: false
+      });
+
+      // 5. Chat message
+      await addDoc(collection(db, 'rooms', roomId, 'messages'), {
+        user:        user?.displayName || 'User',
+        userId:      user?.uid,
+        text:        `Sent a ${gift.name} ${gift.icon}`,
+        isGift:      true,
+        animationUrl: gift.animation,
+        createdAt:   serverTimestamp(),
+        isSystem:    false
       });
       setShowGifts(false);
     } catch (e) {
@@ -340,6 +383,45 @@ export default function VoiceRoomScreen({ route, navigation }) {
         userCoins={userCoins} 
       />
 
+      <GamesHubModal 
+        visible={showGamesHub} 
+        onClose={() => setShowGamesHub(false)} 
+        roomId={roomId}
+        isHost={user?.displayName === host || host === 'Host'} 
+      />
+
+      {gameState?.activeGame === 'dice' && (
+        <DiceGame 
+          gameState={gameState} 
+          roomId={roomId} 
+          onClose={() => setGameState(null)} 
+          userCoins={userCoins}
+        />
+      )}
+      {gameState?.activeGame === 'cards' && (
+        <CardGame 
+          gameState={gameState} 
+          roomId={roomId} 
+          onClose={() => setGameState(null)} 
+        />
+      )}
+      {gameState?.activeGame === 'car' && (
+        <CarGame 
+          gameState={gameState} 
+          roomId={roomId} 
+          onClose={() => setGameState(null)} 
+          isHost={user?.displayName === host || host === 'Host'} 
+        />
+      )}
+      {gameState?.activeGame === 'ludo' && (
+        <LudoGame 
+          gameState={gameState} 
+          roomId={roomId} 
+          onClose={() => setGameState(null)} 
+          isHost={user?.displayName === host || host === 'Host'} 
+        />
+      )}
+
       {activeAnimation && (
         <View style={[StyleSheet.absoluteFill, { zIndex: 9999, justifyContent: 'center', alignItems: 'center' }]} pointerEvents="none">
           <LottieView
@@ -374,6 +456,13 @@ export default function VoiceRoomScreen({ route, navigation }) {
               <Ionicons name={isMuted ? "mic-off" : "mic"} size={22} color="#fff" />
             </TouchableOpacity>
             
+            <TouchableOpacity 
+              style={[styles.circleBtn, { backgroundColor: '#4CAF50', shadowColor: '#4CAF50', shadowOpacity: 0.5, shadowRadius: 8, shadowOffset: { width: 0, height: 4 } }]}
+              onPress={() => setShowGamesHub(true)}
+            >
+              <Ionicons name="game-controller" size={22} color="#fff" />
+            </TouchableOpacity>
+
             <TouchableOpacity 
               style={[styles.circleBtn, { backgroundColor: '#FF3B8B', shadowColor: '#FF3B8B', shadowOpacity: 0.5, shadowRadius: 8, shadowOffset: { width: 0, height: 4 } }]}
               onPress={() => setShowGifts(true)}
