@@ -3,7 +3,6 @@
     "name": "Uchat",
     "slug": "Uchat",
     "version": "1.0.0",
-    "entryPoint": "./App.js",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "uchat",
@@ -42,6 +41,12 @@
     ],
     "experiments": {
       "reactCompiler": false
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "6e276df1-5688-4817-96e9-f2a9bf3ecbb2"
+      }
+    },
+    "owner": "uchatapp"
   }
 }
