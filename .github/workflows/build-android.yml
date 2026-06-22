@@ -31,10 +31,14 @@ jobs:
       - name: Expo Prebuild
         run: npx expo prebuild --platform android
 
+      - name: Generate Keystore
+        run: |
+          keytool -genkey -v -keystore android/app/release.keystore -alias my-key-alias -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Uchat" -storepass password -keypass password
+
       - name: Build APK with Gradle
         run: |
           cd android
-          ./gradlew assembleRelease
+          ./gradlew assembleRelease -Pandroid.injected.signing.store.file=release.keystore -Pandroid.injected.signing.store.password=password -Pandroid.injected.signing.key.alias=my-key-alias -Pandroid.injected.signing.key.password=password
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
