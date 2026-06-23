@@ -28,16 +28,31 @@ jobs:
       - name: Install dependencies
         run: npm install --legacy-peer-deps
 
-      - name: Run Expo Prebuild (generates android folder)
+      - name: Run Expo Prebuild
         run: npx expo prebuild --platform android --clean
 
-      - name: Pin Gradle to 8.10.2 (RN 0.85 incompatible with Gradle 10)
+      - name: Show Gradle wrapper version
+        run: cat android/gradle/wrapper/gradle-wrapper.properties
+
+      - name: Pin Gradle to 8.10.2
         run: |
           sed -i 's|distributionUrl=.*|distributionUrl=https\://services.gradle.org/distributions/gradle-8.10.2-all.zip|' android/gradle/wrapper/gradle-wrapper.properties
           cat android/gradle/wrapper/gradle-wrapper.properties
 
       - name: Disable New Architecture (fixes startup crash)
-        run: sed -i 's/newArchEnabled=true/newArchEnabled=false/' android/gradle.properties
+        run: |
+          sed -i 's/newArchEnabled=true/newArchEnabled=false/' android/gradle.properties
+          grep 'newArchEnabled' android/gradle.properties
+
+      - name: Show NDK version required
+        run: grep -r 'ndkVersion' android/ || echo "No NDK version found"
+
+      - name: Install required Android NDK
+        run: |
+          NDK_VERSION=$(grep -r 'ndkVersion' android/build.gradle | grep -oP '"[0-9.]+"' | tr -d '"' || echo "27.1.12297006")
+          echo "NDK version needed: $NDK_VERSION"
+          echo "y" | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "ndk;$NDK_VERSION" || \
+          echo "y" | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "ndk;27.1.12297006"
 
       - name: Copy vector-icons fonts
         run: |
@@ -60,13 +75,16 @@ jobs:
             -Pandroid.injected.signing.store.password=password \
             -Pandroid.injected.signing.key.alias=my-key-alias \
             -Pandroid.injected.signing.key.password=password \
-            --stacktrace 2>&1 | tee /tmp/gradle_output.txt; exit ${PIPESTATUS[0]}
+            2>&1 | tee /tmp/gradle_output.txt; exit ${PIPESTATUS[0]}
 
-      - name: Show Gradle error if failed
+      - name: Show error on failure
         if: failure()
         run: |
-          echo "=== GRADLE ERROR (last 150 lines) ==="
-          tail -150 /tmp/gradle_output.txt
+          echo "=== FIRST ERROR LINE ==="
+          grep -n "error:\|Error:\|FAILED\|Exception\|Could not\|Cannot" /tmp/gradle_output.txt | head -30
+          echo ""
+          echo "=== LAST 80 LINES ==="
+          tail -80 /tmp/gradle_output.txt
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
