@@ -77,14 +77,15 @@ jobs:
             -Pandroid.injected.signing.key.password=password \
             2>&1 | tee /tmp/gradle_output.txt; exit ${PIPESTATUS[0]}
 
-      - name: Show error on failure
+      - name: Commit error log on failure
         if: failure()
         run: |
-          echo "=== FIRST ERROR LINE ==="
-          grep -n "error:\|Error:\|FAILED\|Exception\|Could not\|Cannot" /tmp/gradle_output.txt | head -30
-          echo ""
-          echo "=== LAST 80 LINES ==="
-          tail -80 /tmp/gradle_output.txt
+          cp /tmp/gradle_output.txt ./gradle_error.log
+          git config --global user.name "GitHub Action Bot"
+          git config --global user.email "action@github.com"
+          git add gradle_error.log
+          git commit -m "Auto-commit gradle error log for debugging" || true
+          git push origin HEAD:main || true
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
