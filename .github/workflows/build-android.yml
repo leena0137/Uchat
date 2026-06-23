@@ -57,7 +57,14 @@ jobs:
             -Pandroid.injected.signing.store.file=$GITHUB_WORKSPACE/release.keystore \
             -Pandroid.injected.signing.store.password=password \
             -Pandroid.injected.signing.key.alias=my-key-alias \
-            -Pandroid.injected.signing.key.password=password
+            -Pandroid.injected.signing.key.password=password \
+            --stacktrace 2>&1 | tee /tmp/gradle_output.txt; exit ${PIPESTATUS[0]}
+
+      - name: Show Gradle error if failed
+        if: failure()
+        run: |
+          echo "=== GRADLE ERROR (last 150 lines) ==="
+          tail -150 /tmp/gradle_output.txt
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
