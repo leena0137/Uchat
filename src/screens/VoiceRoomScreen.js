@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, memo, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, KeyboardAvoidingView, Platform, ImageBackground, TextInput, Alert, FlatList } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 import { doc, onSnapshot, collection, addDoc, serverTimestamp, updateDoc, query, orderBy, limit, setDoc, getDoc, increment } from 'firebase/firestore';
 import Animated, { FadeInDown, FadeIn, BounceIn } from 'react-native-reanimated';
 import { db, auth } from '../config/firebase';

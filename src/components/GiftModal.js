@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, Modal, TouchableOpacity, FlatList, Alert } from 'react-native';
 import Animated, { FadeInDown, FadeOutDown } from 'react-native-reanimated';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 
 export const GIFTS = [
   { id: '1', name: 'Rose', icon: '🌹', cost: 10, animation: 'https://lottie.host/8e3a2414-9b51-4bb8-8d26-70e1cb2a488c/OaU2Xv3P5X.json' },

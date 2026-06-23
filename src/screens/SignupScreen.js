@@ -8,7 +8,7 @@ import Animated, {
   FadeInDown, FadeInUp, ZoomIn,
   useSharedValue, useAnimatedStyle, withSpring, withSequence, withTiming
 } from 'react-native-reanimated';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
 import { auth, db } from '../config/firebase';

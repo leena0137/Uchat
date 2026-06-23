@@ -17,28 +17,38 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 22.x
-
-      - name: Install dependencies
-        run: npm install --legacy-peer-deps
+          node-version: 20.x
 
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
-          java-version: '21'
+          java-version: '17'
 
-      - name: Expo Prebuild
-        run: npx expo prebuild --platform android
+      - name: Install dependencies
+        run: npm install --legacy-peer-deps
+
+      - name: Copy vector-icons fonts
+        run: |
+          mkdir -p android/app/src/main/assets/fonts
+          cp node_modules/react-native-vector-icons/Fonts/*.ttf android/app/src/main/assets/fonts/ 2>/dev/null || true
 
       - name: Generate Keystore
         run: |
-          keytool -genkey -v -keystore release.keystore -alias my-key-alias -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Uchat" -storepass password -keypass password
+          keytool -genkey -v \
+            -keystore $GITHUB_WORKSPACE/release.keystore \
+            -alias my-key-alias -keyalg RSA -keysize 2048 -validity 10000 \
+            -dname "CN=Uchat" -storepass password -keypass password
 
       - name: Build APK with Gradle
         run: |
           cd android
-          ./gradlew assembleRelease -Pandroid.injected.signing.store.file=$GITHUB_WORKSPACE/release.keystore -Pandroid.injected.signing.store.password=password -Pandroid.injected.signing.key.alias=my-key-alias -Pandroid.injected.signing.key.password=password
+          chmod +x gradlew
+          ./gradlew assembleRelease \
+            -Pandroid.injected.signing.store.file=$GITHUB_WORKSPACE/release.keystore \
+            -Pandroid.injected.signing.store.password=password \
+            -Pandroid.injected.signing.key.alias=my-key-alias \
+            -Pandroid.injected.signing.key.password=password
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
