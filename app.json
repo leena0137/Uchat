@@ -1,4 +1,53 @@
 {
-  "name": "uchat",
-  "displayName": "Uchat"
+  "expo": {
+    "name": "Uchat",
+    "slug": "Uchat",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "scheme": "uchat",
+    "userInterfaceStyle": "automatic",
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#E6F4FE",
+        "foregroundImage": "./assets/images/android-icon-foreground.png",
+        "backgroundImage": "./assets/images/android-icon-background.png",
+        "monochromeImage": "./assets/images/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "RECORD_AUDIO"
+      ],
+      "package": "com.anonymous.Uchat"
+    },
+    "plugins": [
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "newArchEnabled": false
+          }
+        }
+      ],
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#208AEF",
+          "android": {
+            "image": "./assets/images/splash-icon.png",
+            "imageWidth": 76
+          }
+        }
+      ]
+    ],
+    "experiments": {
+      "reactCompiler": false
+    },
+    "extra": {
+      "eas": {
+        "projectId": "6e276df1-5688-4817-96e9-f2a9bf3ecbb2"
+      }
+    },
+    "owner": "uchatapp"
+  }
 }

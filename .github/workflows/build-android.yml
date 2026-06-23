@@ -28,6 +28,15 @@ jobs:
       - name: Install dependencies
         run: npm install --legacy-peer-deps
 
+      - name: Run Expo Prebuild (generates android folder)
+        run: npx expo prebuild --platform android --clean
+
+      - name: DISABLE New Architecture (fixes startup crash)
+        run: sed -i 's/newArchEnabled=true/newArchEnabled=false/' android/gradle.properties
+
+      - name: Verify New Architecture is disabled
+        run: grep 'newArchEnabled' android/gradle.properties
+
       - name: Copy vector-icons fonts
         run: |
           mkdir -p android/app/src/main/assets/fonts
