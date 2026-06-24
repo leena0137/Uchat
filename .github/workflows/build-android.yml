@@ -61,17 +61,25 @@ jobs:
             -storepass uchatpass \
             -keypass uchatpass
 
-      - name: Build Debug APK (for testing)
+      - name: Build Debug APK
         run: |
+          set -e
           cd android
-          ./gradlew assembleDebug --no-daemon --stacktrace 2>&1 | tail -100
+          ./gradlew assembleDebug --no-daemon --info 2>&1 | grep -E "(FAILED|ERROR|error:|warning:|BUILD|Task :)" | tail -80 || true
+          ./gradlew assembleDebug --no-daemon
 
       - name: Find APK file
-        run: find android -name "*.apk" -type f
+        run: |
+          echo "=== Searching for APK files ==="
+          find . -name "*.apk" 2>/dev/null || echo "No APK files found anywhere"
+          echo "=== Android build outputs ==="
+          find android/app/build -type f 2>/dev/null | head -30 || echo "No build outputs found"
 
-      - name: Upload Debug APK
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         if: always()
         with:
           name: Uchat-Android-APK
-          path: android/app/build/outputs/apk/**/*.apk
+          path: |
+            android/app/build/outputs/apk/**/*.apk
+            **/*.apk
