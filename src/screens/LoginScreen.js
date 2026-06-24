@@ -9,7 +9,7 @@ import Animated, {
   useSharedValue, useAnimatedStyle,
   withSpring, withSequence, withTiming
 } from 'react-native-reanimated';
-import Ionicons from 'react-native-vector-icons/Ionicons';
+import { Ionicons } from '@expo/vector-icons';
 import {
   signInWithEmailAndPassword,
   signInAnonymously,

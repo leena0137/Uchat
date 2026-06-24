@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert, ScrollView } from 'react-native';
 import Animated, { FadeInDown, FadeInUp, BounceIn, ZoomIn, ZoomInEasyDown, FlipInYLeft, useSharedValue, useAnimatedStyle, withTiming, withSequence, Easing, runOnJS } from 'react-native-reanimated';
-import Ionicons from 'react-native-vector-icons/Ionicons';
+import { Ionicons } from '@expo/vector-icons';
 import { doc, updateDoc, setDoc, increment, getDoc } from 'firebase/firestore';
 import { db, auth } from '../../config/firebase';
 import { awardWinner, GAME_REWARDS, GAME_FEES } from '../../utils/gameRewards';

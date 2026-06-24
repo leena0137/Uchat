@@ -7,6 +7,9 @@
     "icon": "./assets/images/icon.png",
     "scheme": "uchat",
     "userInterfaceStyle": "automatic",
+    "ios": {
+      "icon": "./assets/expo.icon"
+    },
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
@@ -20,15 +23,11 @@
       ],
       "package": "com.anonymous.Uchat"
     },
+    "web": {
+      "output": "single",
+      "favicon": "./assets/images/favicon.png"
+    },
     "plugins": [
-      [
-        "expo-build-properties",
-        {
-          "android": {
-            "newArchEnabled": false
-          }
-        }
-      ],
       [
         "expo-splash-screen",
         {
